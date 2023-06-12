@@ -1,5 +1,6 @@
 package org.fasttrackit.homework18.service.transaction;
 
+import lombok.RequiredArgsConstructor;
 import org.fasttrackit.homework18.model.transaction.Transaction;
 import org.fasttrackit.homework18.model.transaction.TransactionType;
 import org.springframework.stereotype.Service;
@@ -14,13 +15,15 @@ import static org.fasttrackit.homework18.model.transaction.TransactionType.BUY;
 import static org.fasttrackit.homework18.model.transaction.TransactionType.SELL;
 
 @Service
+@RequiredArgsConstructor
 public class TransactionService {
 
     private long currentId = 0;
     private final List<Transaction> transactions = new ArrayList<>();
+    private final TransactionRepository transactionRepository;
 
     public List<Transaction> getAll(String product, TransactionType type, Double minAmount, Double maxAmount) {
-        Stream<Transaction> stream = transactions.stream();
+        Stream<Transaction> stream = transactionRepository.findAll().stream();
         if (product != null) {
             stream = stream.filter(transaction -> transaction.getProduct().equals(product));
         }
@@ -37,27 +40,23 @@ public class TransactionService {
     }
 
     public Transaction getById(long id) {
-        return transactions.stream()
-                .filter(transaction -> transaction.getId() == id)
-                .findFirst()
-                .orElse(null);
+        return transactionRepository.findById(id).orElse(null);
     }
 
     public Transaction add(Transaction transaction) {
-        transactions.add(transaction);
-        return transaction;
+        return transactionRepository.save(transaction);
     }
 
     public Transaction add(double amount, String product, TransactionType type) {
         Transaction transaction = new Transaction(currentId++, product, type, amount);
-        transactions.add(transaction);
-        return transaction;
+        return transactionRepository.save(transaction);
     }
 
     public Map<TransactionType, List<Transaction>> getReportByType() {
         Map<TransactionType, List<Transaction>> report = new HashMap<>();
-        report.put(SELL, transactions.stream().filter(transaction -> transaction.getType() == SELL).toList());
-        report.put(BUY, transactions.stream().filter(transaction -> transaction.getType() == BUY).toList());
+        List<Transaction> transactionList = transactionRepository.findAll();
+        report.put(SELL, transactionList.stream().filter(transaction -> transaction.getType() == SELL).toList());
+        report.put(BUY, transactionList.stream().filter(transaction -> transaction.getType() == BUY).toList());
         return report;
     }
 }
